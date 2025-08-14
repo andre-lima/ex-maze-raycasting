@@ -24,3 +24,5 @@ game
   .then(() => {
     // Do something after the game starts
   });
+
+game.showDebug(true);
