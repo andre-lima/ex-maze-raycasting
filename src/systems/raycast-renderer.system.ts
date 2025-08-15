@@ -16,6 +16,14 @@ import {
 } from 'excalibur';
 import { Tile, TiledResource } from '@excaliburjs/plugin-tiled';
 import { RaycastCameraComponent } from '../components/raycast-camera.component';
+import { Resources } from '../resources';
+
+enum HitFace {
+  Top = 'top',
+  Bottom = 'bottom',
+  Left = 'left',
+  Right = 'right',
+}
 
 export class RaycastRendererSystem extends System {
   public readonly systemType = SystemType.Draw;
@@ -23,14 +31,14 @@ export class RaycastRendererSystem extends System {
   tileMap: TiledResource;
   wallsCollisionGroup: CollisionGroup | undefined | null;
   position = { x: 0, y: 0 };
-  dimensions = { width: 600, height: 400 };
+  dimensions = { width: 800, height: 600, tileWidth: 16 };
 
   constructor(
     public world: World,
     tileMap: TiledResource,
     wallsCollisionGroup?: CollisionGroup | null,
     position?: { x: number; y: number },
-    dimensions?: { width: number; height: number }
+    dimensions?: { width: number; height: number; tileWidth: number }
   ) {
     super();
     this.tileMap = tileMap;
@@ -48,10 +56,20 @@ export class RaycastRendererSystem extends System {
       event.ctx.drawRectangle(
         vec(this.position.x, this.position.y),
         this.dimensions.width,
-        this.dimensions.height,
-        Color.Viridian
+        this.dimensions.height / 2,
+        Color.Brown
       );
+
+      event.ctx.drawRectangle(
+        vec(this.position.x, this.position.y + this.dimensions.height / 2),
+        this.dimensions.width,
+        this.dimensions.height / 2,
+        Color.DarkGray
+      );
+
+      event.ctx.save();
       this.updateRaycasting(camera, event.ctx);
+      event.ctx.restore();
     });
   }
 
@@ -67,6 +85,8 @@ export class RaycastRendererSystem extends System {
     for (let col = 0; col < camera.raysCount; col++) {
       const rayAngle =
         ownerDir - halfFOV + (col / (camera.raysCount - 1)) * camera.FOV;
+      let hitFace = HitFace.Bottom;
+      let tileHitPosition = 0;
 
       camera.rays[col].dir = Vector.fromAngle(rayAngle);
       camera.rays[col].pos = owner.pos;
@@ -78,12 +98,16 @@ export class RaycastRendererSystem extends System {
         },
       });
 
+      // Hit
+      const hit = rayHits?.[0];
+
       // Distance from the camera to the hit point
-      const distance = rayHits?.[0]?.distance;
+      const distance = hit?.distance;
       const correctedDistance = (distance || 0) * Math.cos(rayAngle - ownerDir); // fix fisheye
 
       // Information on the tile hit
-      const point = rayHits?.[0]?.point;
+      const point = hit?.point;
+
       if (point) {
         const tile =
           this.tileMap.getTileByPoint(
@@ -100,7 +124,7 @@ export class RaycastRendererSystem extends System {
           camera,
           col,
           correctedDistance,
-          rayHits?.[0],
+          hit,
           tile?.tiledTile
         );
       }
@@ -117,6 +141,52 @@ export class RaycastRendererSystem extends System {
     // needed to the system runs
   }
 
+  private calculateTileHitPosition(hit: RayCastHit): number {
+    const point = hit?.point;
+    const normal = hit?.normal;
+    let hitFace: HitFace = HitFace.Bottom;
+    let tileHitPosition = 0;
+
+    if (normal?.x && normal?.x > 0) {
+      hitFace = HitFace.Right;
+    } else if (normal?.x && normal?.x < 0) {
+      hitFace = HitFace.Left;
+    } else if (normal?.y && normal?.y > 0) {
+      hitFace = HitFace.Bottom;
+    } else if (normal?.y && normal?.y < 0) {
+      hitFace = HitFace.Top;
+    }
+
+    if (point?.x && (hitFace === HitFace.Top || hitFace === HitFace.Bottom)) {
+      tileHitPosition = point.x % this.dimensions.tileWidth;
+    } else if (
+      point?.y &&
+      (hitFace === HitFace.Left || hitFace === HitFace.Right)
+    ) {
+      tileHitPosition = point.y % this.dimensions.tileWidth;
+    }
+
+    return tileHitPosition;
+  }
+
+  // private getTextureStrip(hitPosition: number) {
+  //   return new Sprite({
+  //     image: Resources.wallTile,
+  //     sourceView: {
+  //       // Take a small slice of the source image starting at pixel (10, 10) with dimension 20 pixels x 20 pixels
+  //       x: Math.floor(hitPosition),
+  //       y: this.dimensions.tileWidth,
+  //       width: 1,
+  //       height: this.dimensions.tileWidth,
+  //     },
+  //     // destSize: {
+  //     //   // Optionally specify a different projected size, otherwise use the source
+  //     //   width: 100,
+  //     //   height: 100,
+  //     // },
+  //   });
+  // }
+
   private drawWall(
     ctx: ExcaliburGraphicsContext,
     camera: RaycastCameraComponent,
@@ -125,18 +195,34 @@ export class RaycastRendererSystem extends System {
     hit: RayCastHit,
     tile: Tile | undefined
   ) {
+    const tileHitPosition = this.calculateTileHitPosition(hit);
+    // const textureStrip = this.getTextureStrip(tileHitPosition);
+    // console.log(tileHitPosition);
+
     const rayWidth = this.dimensions.width / camera.raysCount;
-    const colHeight = Math.min(
-      (20 * this.dimensions.height) / distance,
-      this.dimensions.height
-    );
+
+    const colHeight = (13 * this.dimensions.height) / distance;
     const colOffset = this.dimensions.height / 2 - colHeight / 2;
 
-    ctx.drawRectangle(
-      vec(this.position.x + rayIndex * rayWidth, this.position.y + colOffset),
+    //  drawImage(image: HTMLImageSource, sx: number, sy: number, swidth?: number, sheight?: number, dx?: number, dy?: number, dwidth?: number, dheight?: number): void;
+    ctx.drawImage(
+      Resources.wallTileRed.image,
+      Math.floor(tileHitPosition),
+      0,
+      1,
+      16,
+      this.position.x + rayIndex * rayWidth,
+      this.position.y + colOffset,
       rayWidth,
-      colHeight,
-      Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 400)
+      colHeight
     );
+    ctx.tint = Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 300);
+
+    // ctx.drawRectangle(
+    //   vec(this.position.x + rayIndex * rayWidth, this.position.y + colOffset),
+    //   rayWidth,
+    //   colHeight,
+    //   Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 400)
+    // );
   }
 }

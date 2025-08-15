@@ -31,10 +31,10 @@ export class Player extends Actor {
     const direction = Vector.fromAngle(this.rotation - Math.PI / 2);
 
     if (engine.input.keyboard.isHeld(Keys.ArrowRight)) {
-      this.angularVelocity = Config.PlayerSpeed / 10;
+      this.angularVelocity = Config.PlayerSpeed / 30;
     }
     if (engine.input.keyboard.isHeld(Keys.ArrowLeft)) {
-      this.angularVelocity = -Config.PlayerSpeed / 10;
+      this.angularVelocity = -Config.PlayerSpeed / 30;
     }
     if (engine.input.keyboard.isHeld(Keys.ArrowUp)) {
       this.vel = direction.scale(Config.PlayerSpeed);

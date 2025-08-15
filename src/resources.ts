@@ -4,6 +4,9 @@ import { ImageSource, Loader } from 'excalibur';
 // It is convenient to put your resources in one place
 export const Resources = {
   man: new ImageSource('/images/man.png'), // Vite public/ directory serves the root images
+  wallTile: new ImageSource('/images/wall_tile.png'),
+  wallTileRed: new ImageSource('/images/wall_tile_red.png'),
+  debug: new ImageSource('/images/debug.png'),
 } as const;
 
 export const Tilemaps: Record<string, TiledResource> = {

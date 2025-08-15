@@ -10,7 +10,7 @@ export const Config = {
 const game = new Engine({
   width: 800, // Logical width and height in game pixels
   height: 600,
-  displayMode: DisplayMode.FitScreenAndFill,
+  displayMode: DisplayMode.Fixed,
   pixelArt: true,
   scenes: {
     start: MyLevel,
