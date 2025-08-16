@@ -8,7 +8,7 @@ export const Config = {
 };
 
 const game = new Engine({
-  width: 800, // Logical width and height in game pixels
+  width: 1000,
   height: 600,
   displayMode: DisplayMode.Fixed,
   pixelArt: true,

@@ -137,10 +137,6 @@ export class RaycastRendererSystem extends System {
     }
   }
 
-  public update(elapsed: number): void {
-    // needed to the system runs
-  }
-
   private calculateTileHitPosition(hit: RayCastHit): number {
     const point = hit?.point;
     const normal = hit?.normal;
@@ -169,24 +165,6 @@ export class RaycastRendererSystem extends System {
     return tileHitPosition;
   }
 
-  // private getTextureStrip(hitPosition: number) {
-  //   return new Sprite({
-  //     image: Resources.wallTile,
-  //     sourceView: {
-  //       // Take a small slice of the source image starting at pixel (10, 10) with dimension 20 pixels x 20 pixels
-  //       x: Math.floor(hitPosition),
-  //       y: this.dimensions.tileWidth,
-  //       width: 1,
-  //       height: this.dimensions.tileWidth,
-  //     },
-  //     // destSize: {
-  //     //   // Optionally specify a different projected size, otherwise use the source
-  //     //   width: 100,
-  //     //   height: 100,
-  //     // },
-  //   });
-  // }
-
   private drawWall(
     ctx: ExcaliburGraphicsContext,
     camera: RaycastCameraComponent,
@@ -196,15 +174,16 @@ export class RaycastRendererSystem extends System {
     tile: Tile | undefined
   ) {
     const tileHitPosition = this.calculateTileHitPosition(hit);
-    // const textureStrip = this.getTextureStrip(tileHitPosition);
-    // console.log(tileHitPosition);
 
     const rayWidth = this.dimensions.width / camera.raysCount;
 
-    const colHeight = (13 * this.dimensions.height) / distance;
-    const colOffset = this.dimensions.height / 2 - colHeight / 2;
+    const projectionPlaneDist =
+      this.dimensions.width / 2 / Math.tan(camera.FOV / 2);
+    const wallHeight =
+      (this.dimensions.tileWidth * projectionPlaneDist) / distance;
 
-    //  drawImage(image: HTMLImageSource, sx: number, sy: number, swidth?: number, sheight?: number, dx?: number, dy?: number, dwidth?: number, dheight?: number): void;
+    const colOffset = this.dimensions.height / 2 - wallHeight / 2;
+
     ctx.drawImage(
       Resources.wallTileRed.image,
       Math.floor(tileHitPosition),
@@ -214,7 +193,7 @@ export class RaycastRendererSystem extends System {
       this.position.x + rayIndex * rayWidth,
       this.position.y + colOffset,
       rayWidth,
-      colHeight
+      wallHeight
     );
     ctx.tint = Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 300);
 
@@ -224,5 +203,9 @@ export class RaycastRendererSystem extends System {
     //   colHeight,
     //   Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 400)
     // );
+  }
+
+  public update(elapsed: number): void {
+    // needed to the system runs
   }
 }
