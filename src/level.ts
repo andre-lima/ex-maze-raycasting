@@ -1,6 +1,6 @@
 import { Engine, Scene, vec } from 'excalibur';
 import { Player } from './player';
-import { Tilemaps } from './resources';
+import { Resources, Tilemaps } from './resources';
 import { RaycastRendererSystem } from './systems/raycast-renderer.system';
 
 export class MyLevel extends Scene {
@@ -18,9 +18,10 @@ export class MyLevel extends Scene {
       new RaycastRendererSystem(
         this.world,
         maze,
+        { 0: Resources.wallTile, 1: Resources.wallTileRed },
         null,
         { x: 0, y: 0 },
-        { width: 1000, height: 600, tileWidth: 16 }
+        { width: 1000, height: 600, tileHeight: 16 }
       )
     );
   }

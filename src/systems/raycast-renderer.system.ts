@@ -4,6 +4,7 @@ import {
   Color,
   Debug,
   ExcaliburGraphicsContext,
+  ImageSource,
   PreDrawEvent,
   Query,
   RayCastHit,
@@ -28,17 +29,19 @@ enum HitFace {
 export class RaycastRendererSystem extends System {
   public readonly systemType = SystemType.Draw;
   public query: Query<typeof RaycastCameraComponent>;
+  private texturesConfig: Record<string, ImageSource> = {};
   tileMap: TiledResource;
   wallsCollisionGroup: CollisionGroup | undefined | null;
   position = { x: 0, y: 0 };
-  dimensions = { width: 800, height: 600, tileWidth: 16 };
+  dimensions = { width: 800, height: 600, tileHeight: 16 };
 
   constructor(
     public world: World,
     tileMap: TiledResource,
+    texturesConfig?: Record<string, ImageSource>,
     wallsCollisionGroup?: CollisionGroup | null,
     position?: { x: number; y: number },
-    dimensions?: { width: number; height: number; tileWidth: number }
+    dimensions?: { width: number; height: number; tileHeight: number }
   ) {
     super();
     this.tileMap = tileMap;
@@ -46,6 +49,7 @@ export class RaycastRendererSystem extends System {
     this.query = this.world.query([RaycastCameraComponent]);
     this.position = position || this.position;
     this.dimensions = dimensions || this.dimensions;
+    this.texturesConfig = texturesConfig || this.texturesConfig;
   }
 
   public initialize(world: World, scene: Scene): void {
@@ -66,6 +70,8 @@ export class RaycastRendererSystem extends System {
         this.dimensions.height / 2,
         Color.DarkGray
       );
+
+      this.drawFloor();
 
       event.ctx.save();
       this.updateRaycasting(camera, event.ctx);
@@ -108,16 +114,13 @@ export class RaycastRendererSystem extends System {
       // Information on the tile hit
       const point = hit?.point;
 
+      hit?.normal;
+
       if (point) {
-        const tile =
-          this.tileMap.getTileByPoint(
-            'maze',
-            vec(point.x - 0.1, point.y - 0.1)
-          ) ||
-          this.tileMap.getTileByPoint(
-            'maze',
-            vec(point.x + 0.1, point.y + 0.1)
-          );
+        const tile = this.tileMap.getTileByPoint(
+          'maze',
+          point.add(hit.normal.scale(-1))
+        );
 
         this.drawWall(
           ctx,
@@ -154,15 +157,19 @@ export class RaycastRendererSystem extends System {
     }
 
     if (point?.x && (hitFace === HitFace.Top || hitFace === HitFace.Bottom)) {
-      tileHitPosition = point.x % this.dimensions.tileWidth;
+      tileHitPosition = point.x % this.dimensions.tileHeight;
     } else if (
       point?.y &&
       (hitFace === HitFace.Left || hitFace === HitFace.Right)
     ) {
-      tileHitPosition = point.y % this.dimensions.tileWidth;
+      tileHitPosition = point.y % this.dimensions.tileHeight;
     }
 
     return tileHitPosition;
+  }
+
+  private drawFloor() {
+    //  TODO
   }
 
   private drawWall(
@@ -173,6 +180,10 @@ export class RaycastRendererSystem extends System {
     hit: RayCastHit,
     tile: Tile | undefined
   ) {
+    if (!tile) {
+      return;
+    }
+
     const tileHitPosition = this.calculateTileHitPosition(hit);
 
     const rayWidth = this.dimensions.width / camera.raysCount;
@@ -180,12 +191,12 @@ export class RaycastRendererSystem extends System {
     const projectionPlaneDist =
       this.dimensions.width / 2 / Math.tan(camera.FOV / 2);
     const wallHeight =
-      (this.dimensions.tileWidth * projectionPlaneDist) / distance;
+      (this.dimensions.tileHeight * projectionPlaneDist) / distance;
 
     const colOffset = this.dimensions.height / 2 - wallHeight / 2;
 
     ctx.drawImage(
-      Resources.wallTileRed.image,
+      this.texturesConfig[tile?.id ?? 0].image,
       Math.floor(tileHitPosition),
       0,
       1,
@@ -196,16 +207,9 @@ export class RaycastRendererSystem extends System {
       wallHeight
     );
     ctx.tint = Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 300);
-
-    // ctx.drawRectangle(
-    //   vec(this.position.x + rayIndex * rayWidth, this.position.y + colOffset),
-    //   rayWidth,
-    //   colHeight,
-    //   Color.DarkGray.darken(hit.normal.x * 0.2 + distance / 400)
-    // );
   }
 
   public update(elapsed: number): void {
-    // needed to the system runs
+    // Needed to make the System run
   }
 }

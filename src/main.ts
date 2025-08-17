@@ -12,6 +12,8 @@ const game = new Engine({
   height: 600,
   displayMode: DisplayMode.Fixed,
   pixelArt: true,
+  canvasElementId: 'game',
+
   scenes: {
     start: MyLevel,
   },

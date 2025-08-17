@@ -6,6 +6,7 @@ export const Resources = {
   man: new ImageSource('/images/man.png'), // Vite public/ directory serves the root images
   wallTile: new ImageSource('/images/wall_tile.png'),
   wallTileRed: new ImageSource('/images/wall_tile_red.png'),
+  floorTile: new ImageSource('/images/floor_tile.png'),
   debug: new ImageSource('/images/debug.png'),
 } as const;
 
