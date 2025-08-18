@@ -17,7 +17,6 @@ import {
 } from 'excalibur';
 import { Tile, TiledResource } from '@excaliburjs/plugin-tiled';
 import { RaycastCameraComponent } from '../components/raycast-camera.component';
-import { Resources } from '../resources';
 
 enum HitFace {
   Top = 'top',
@@ -68,10 +67,8 @@ export class RaycastRendererSystem extends System {
         vec(this.position.x, this.position.y + this.dimensions.height / 2),
         this.dimensions.width,
         this.dimensions.height / 2,
-        Color.DarkGray
+        Color.Gray
       );
-
-      this.drawFloor();
 
       event.ctx.save();
       this.updateRaycasting(camera, event.ctx);
@@ -91,8 +88,6 @@ export class RaycastRendererSystem extends System {
     for (let col = 0; col < camera.raysCount; col++) {
       const rayAngle =
         ownerDir - halfFOV + (col / (camera.raysCount - 1)) * camera.FOV;
-      let hitFace = HitFace.Bottom;
-      let tileHitPosition = 0;
 
       camera.rays[col].dir = Vector.fromAngle(rayAngle);
       camera.rays[col].pos = owner.pos;
@@ -166,10 +161,6 @@ export class RaycastRendererSystem extends System {
     }
 
     return tileHitPosition;
-  }
-
-  private drawFloor() {
-    //  TODO
   }
 
   private drawWall(
